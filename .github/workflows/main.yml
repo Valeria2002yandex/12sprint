@@ -1,1 +1,56 @@
+name: Go CI/CD Pipeline
 
+on:
+  push:
+    branches:
+      - main 
+    tags:
+      - 'v*.*.*' 
+
+jobs:
+  test:
+    name: Run Go Tests
+    runs-on: ubuntu-latest 
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3 
+
+      - name: Set up Go environment
+        uses: actions/setup-go@v5 
+        with:
+          go-version: '1.20' 
+
+      - name: Download Go modules
+        run: go mod download 
+
+      - name: Run Go tests
+        run: go test -v ./... 
+
+  build_and_publish:
+    name: Build & Publish to DockerHub
+    needs: test 
+    if: startsWith(github.ref, 'refs/tags/') 
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3 
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }} 
+          password: ${{ secrets.DOCKER_PASSWORD }} 
+
+      - name: Extract tag name
+        id: get_tag
+        run: echo "TAG=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT 
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5 
+        with:
+          context: . 
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/final-main:${{ steps.get_tag.outputs.TAG }}, ${{ secrets.DOCKER_USERNAME }}/final-main:latest
+  
