@@ -110,7 +110,6 @@ func TestSetStatus(t *testing.T) {
 
 	require.NoError(t, err)
 
-	// check
 	stored, err := store.Get(parcel.Number)
 
 	require.NoError(t, err)
